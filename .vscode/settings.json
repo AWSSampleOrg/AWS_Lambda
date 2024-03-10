@@ -1,0 +1,28 @@
+{
+  "editor.formatOnSave": true,
+  "files.exclude": {
+    "**/.git": true,
+    "**/.svn": true,
+    "**/.hg": true,
+    "**/CVS": true,
+    "**/.DS_Store": true
+  },
+  // JS/TS
+  "eslint.lintTask.enable": true,
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "npm.packageManager": "auto",
+  "[typescript][typescriptreact][javascript][javascriptreact][json][yaml][graphql][vue][markdown][html]": {
+    "editor.codeActionsOnSave": {
+      "source.fixAll.eslint": true
+    },
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  // C/C++
+  "C_Cpp.formatting": "clangFormat",
+  "C_Cpp.codeAnalysis.clangTidy.enabled": true,
+  "C_Cpp.default.cppStandard": "c++17",
+  // ShellScript
+  "shellformat.path": "/opt/homebrew/bin/shfmt",
+  // CSpell
+  "cSpell.words": []
+}
