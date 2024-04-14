@@ -1,0 +1,87 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: API Gateway Sample
+Parameters:
+  # Project Name Parameter
+  ProjectPrefix:
+    Type: String
+    Default: ""
+
+Resources:
+  #-------------------------------------------------------
+  # CloudWatch Alarm
+  #-------------------------------------------------------
+  LambdaDurationAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      ActionsEnabled: true
+      AlarmActions:
+        - !Ref SNSTopic
+      AlarmDescription: !Sub This is the Duration alarm for ${TargetLambdaFunction}
+      AlarmName: !Sub ${TargetLambdaFunction}Duration
+      # CloudWatch Alarm would alert when it happens "EvaluationPeriods" times that the state of "ComparisonOperator" happens "Threshold" times in "Period" seconds.
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref TargetLambdaFunction
+      EvaluationPeriods: 1
+      MetricName: Duration
+      Namespace: AWS/Lambda
+      Period: 600
+      Statistic: Average
+      Threshold: 5
+
+  #-------------------------------------------------------
+  # SNS
+  #-------------------------------------------------------
+  SNSTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: SNSTopic
+
+  #-------------------------------------------------------
+  # CloudWatch LogGroup
+  #-------------------------------------------------------
+  TargetLambdaFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${TargetLambdaFunction}
+
+  #-------------------------------------------------------
+  # Lambda
+  #-------------------------------------------------------
+  TargetLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: Lambda/lambda_handler
+      FunctionName: lambda_handler
+      Handler: lambda_handler.lambda_handler
+      MemorySize: 128
+      Role: !Sub ${LambdaRole.Arn}
+      Runtime: python3.12
+      Timeout: 900
+      Tracing: Active
+      Environment:
+        Variables:
+          LOG_LEVEL: DEBUG
+
+  # ------------------------------------------------------------#
+  # IAM
+  # ------------------------------------------------------------#
+  LambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AWSLambda_FullAccess
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Path: /
+      RoleName: LambdaRole
