@@ -1,0 +1,85 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: API Gateway Sample
+Parameters:
+  # Project Name Parameter
+  ProjectPrefix:
+    Type: String
+    Default: ""
+
+  VpcId:
+    Type: String
+
+  PrivateSubnetAID:
+    Type: String
+  PrivateSubnetBID:
+    Type: String
+  PrivateSubnetCID:
+    Type: String
+  PrivateSubnetDID:
+    Type: String
+
+Resources:
+  # ------------------------------------------------------------#
+  # EFS
+  # ------------------------------------------------------------#
+  SecurityGroupForEFS:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub ${ProjectPrefix}SecurityGroupForEFS
+      GroupDescription: This is for SecurityGroupForEFS
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - CidrIp: "0.0.0.0/0"
+          Description: SecurityGroupForEFS
+          FromPort: 2049
+          IpProtocol: tcp
+          ToPort: 2049
+      Tags:
+        - Key: Name
+          Value: !Sub ${ProjectPrefix}SecurityGroupForEFS
+
+  EFSFileSystem:
+    Type: AWS::EFS::FileSystem
+    Properties:
+      Encrypted: true
+      FileSystemTags:
+        - Key: Name
+          Value: !Sub ${ProjectPrefix}EFS
+
+  EFSAccessPoint:
+    Type: AWS::EFS::AccessPoint
+    Properties:
+      AccessPointTags:
+        - Key: Name
+          Value: !Sub ${ProjectPrefix}AccessPoint
+      FileSystemId: !Ref EFSFileSystem
+
+  EFSMountTargetA:
+    Type: AWS::EFS::MountTarget
+    Properties:
+      FileSystemId: !Ref EFSFileSystem
+      SubnetId: !Ref PrivateSubnetAID
+      SecurityGroups:
+        - !Ref SecurityGroupForEFS
+  EFSMountTargetB:
+    Type: AWS::EFS::MountTarget
+    Properties:
+      FileSystemId: !Ref EFSFileSystem
+      SubnetId: !Ref PrivateSubnetBID
+      SecurityGroups:
+        - !Ref SecurityGroupForEFS
+  EFSMountTargetC:
+    Type: AWS::EFS::MountTarget
+    Properties:
+      FileSystemId: !Ref EFSFileSystem
+      SubnetId: !Ref PrivateSubnetCID
+      SecurityGroups:
+        - !Ref SecurityGroupForEFS
+  EFSMountTargetD:
+    Type: AWS::EFS::MountTarget
+    Properties:
+      FileSystemId: !Ref EFSFileSystem
+      SubnetId: !Ref PrivateSubnetDID
+      SecurityGroups:
+        - !Ref SecurityGroupForEFS
