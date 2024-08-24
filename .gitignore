@@ -2,3 +2,6 @@
 layer.zip
 DeveloperGuides/LambdaLayers/python/python
 /**/packaged_template.yml
+Building-with-Java/**/target
+Building-with-Java/**/build
+Building-with-Java/**/.gradle
