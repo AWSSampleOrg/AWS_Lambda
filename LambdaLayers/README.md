@@ -5,9 +5,9 @@ When you add a layer to a function, Lambda loads the layer content into the **`/
 | Runtime      | Path                                                  |
 | ------------ | ----------------------------------------------------- |
 | Node.js      | nodejs/node_modules                                   |
-|              | nodejs/node14/node_modules (NODE_PATH)                |
 |              | nodejs/node16/node_modules (NODE_PATH)                |
 |              | nodejs/node18/node_modules (NODE_PATH)                |
+|              | nodejs/node20/node_modules (NODE_PATH)                |
 | Python       | python                                                |
 |              | python/lib/python3.x/site-packages (site directories) |
 | Java         | java/lib (CLASSPATH)                                  |
