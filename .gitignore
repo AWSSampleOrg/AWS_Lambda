@@ -5,3 +5,5 @@ DeveloperGuides/LambdaLayers/python/python
 Building-with-Java/**/target
 Building-with-Java/**/build
 Building-with-Java/**/.gradle
+Building-with-Go/**/bootstrap
+Building-with-Go/**/function.zip
