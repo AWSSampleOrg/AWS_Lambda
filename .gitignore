@@ -7,3 +7,4 @@ Building-with-Java/**/build
 Building-with-Java/**/.gradle
 Building-with-Go/**/bootstrap
 Building-with-Go/**/function.zip
+Building-with-Rust/**/target
