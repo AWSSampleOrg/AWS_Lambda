@@ -1,13 +1,27 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
-Description: API Gateway Sample
+Description: SQS triggered Lambda
 Parameters:
-  # Project Name Parameter
   ProjectPrefix:
     Type: String
     Default: ""
 
 Resources:
+  Queue:
+    Type: AWS::SQS::Queue
+    Properties:
+      FifoQueue: false
+      ContentBasedDeduplication: true
+      QueueName: !Ref SQSQueueName
+
+  EventSourceMapping:
+    Type: AWS::Lambda::EventSourceMapping
+    Properties:
+      BatchSize: 10
+      EventSourceArn: !Sub ${Queue.Arn}
+      FunctionName: !Sub ${TargetLambdaFunction.Arn}
+      MaximumBatchingWindowInSeconds: 0
+
   #-------------------------------------------------------
   # CloudWatch LogGroup
   #-------------------------------------------------------
@@ -19,37 +33,20 @@ Resources:
   #-------------------------------------------------------
   # Lambda
   #-------------------------------------------------------
-  InternalExtensionLayer:
-    Type: AWS::Serverless::LayerVersion
-    Properties:
-      LayerName: MyLayer
-      Description: Layer description
-      ContentUri: importtime_wrapper
-      CompatibleArchitectures:
-        - x86_64
-        - arm64
-      CompatibleRuntimes:
-        - python3.13
-      LicenseInfo: "Available under the MIT-0 license."
-      RetentionPolicy: Delete
-
   TargetLambdaFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: Lambda/lambda_handler
-      FunctionName: lambda_handler
-      Handler: lambda_handler.lambda_handler
+      CodeUri: Lambda/lambda_function
+      FunctionName: lambda_function
+      Handler: lambda_function.lambda_handler
       MemorySize: 128
       Role: !Sub ${LambdaRole.Arn}
       Runtime: python3.13
       Timeout: 900
       Tracing: Active
-      Layers:
-        - !Ref InternalExtensionLayer
       Environment:
         Variables:
           LOG_LEVEL: DEBUG
-          AWS_LAMBDA_EXEC_WRAPPER: /opt/importtime_wrapper
 
   # ------------------------------------------------------------#
   # IAM
@@ -67,7 +64,6 @@ Resources:
             Action:
               - sts:AssumeRole
       ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AWSLambda_FullAccess
-        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AdministratorAccess
       Path: /
-      RoleName: LambdaRole
+      RoleName: !Sub ${ProjectPrefix}LambdaRole
