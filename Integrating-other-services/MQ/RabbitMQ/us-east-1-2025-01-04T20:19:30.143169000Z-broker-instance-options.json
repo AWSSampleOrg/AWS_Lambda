@@ -1,0 +1,155 @@
+{
+  "BrokerInstanceOptions": [
+    {
+      "AvailabilityZones": [
+        {
+          "Name": "us-east-1c"
+        },
+        {
+          "Name": "us-east-1a"
+        },
+        {
+          "Name": "us-east-1f"
+        },
+        {
+          "Name": "us-east-1b"
+        },
+        {
+          "Name": "us-east-1d"
+        }
+      ],
+      "EngineType": "RABBITMQ",
+      "HostInstanceType": "mq.m5.2xlarge",
+      "StorageType": "ebs",
+      "SupportedDeploymentModes": ["SINGLE_INSTANCE", "CLUSTER_MULTI_AZ"],
+      "SupportedEngineVersions": [
+        "3.13",
+        "3.12.13",
+        "3.11.28",
+        "3.11.20",
+        "3.11.16"
+      ]
+    },
+    {
+      "AvailabilityZones": [
+        {
+          "Name": "us-east-1c"
+        },
+        {
+          "Name": "us-east-1a"
+        },
+        {
+          "Name": "us-east-1f"
+        },
+        {
+          "Name": "us-east-1b"
+        },
+        {
+          "Name": "us-east-1d"
+        }
+      ],
+      "EngineType": "RABBITMQ",
+      "HostInstanceType": "mq.m5.4xlarge",
+      "StorageType": "ebs",
+      "SupportedDeploymentModes": ["SINGLE_INSTANCE", "CLUSTER_MULTI_AZ"],
+      "SupportedEngineVersions": [
+        "3.13",
+        "3.12.13",
+        "3.11.28",
+        "3.11.20",
+        "3.11.16"
+      ]
+    },
+    {
+      "AvailabilityZones": [
+        {
+          "Name": "us-east-1c"
+        },
+        {
+          "Name": "us-east-1a"
+        },
+        {
+          "Name": "us-east-1f"
+        },
+        {
+          "Name": "us-east-1b"
+        },
+        {
+          "Name": "us-east-1d"
+        }
+      ],
+      "EngineType": "RABBITMQ",
+      "HostInstanceType": "mq.m5.large",
+      "StorageType": "ebs",
+      "SupportedDeploymentModes": ["SINGLE_INSTANCE", "CLUSTER_MULTI_AZ"],
+      "SupportedEngineVersions": [
+        "3.13",
+        "3.12.13",
+        "3.11.28",
+        "3.11.20",
+        "3.11.16"
+      ]
+    },
+    {
+      "AvailabilityZones": [
+        {
+          "Name": "us-east-1c"
+        },
+        {
+          "Name": "us-east-1a"
+        },
+        {
+          "Name": "us-east-1f"
+        },
+        {
+          "Name": "us-east-1b"
+        },
+        {
+          "Name": "us-east-1d"
+        }
+      ],
+      "EngineType": "RABBITMQ",
+      "HostInstanceType": "mq.m5.xlarge",
+      "StorageType": "ebs",
+      "SupportedDeploymentModes": ["SINGLE_INSTANCE", "CLUSTER_MULTI_AZ"],
+      "SupportedEngineVersions": [
+        "3.13",
+        "3.12.13",
+        "3.11.28",
+        "3.11.20",
+        "3.11.16"
+      ]
+    },
+    {
+      "AvailabilityZones": [
+        {
+          "Name": "us-east-1c"
+        },
+        {
+          "Name": "us-east-1a"
+        },
+        {
+          "Name": "us-east-1f"
+        },
+        {
+          "Name": "us-east-1b"
+        },
+        {
+          "Name": "us-east-1d"
+        }
+      ],
+      "EngineType": "RABBITMQ",
+      "HostInstanceType": "mq.t3.micro",
+      "StorageType": "ebs",
+      "SupportedDeploymentModes": ["SINGLE_INSTANCE"],
+      "SupportedEngineVersions": [
+        "3.13",
+        "3.12.13",
+        "3.11.28",
+        "3.11.20",
+        "3.11.16"
+      ]
+    }
+  ],
+  "MaxResults": 20
+}

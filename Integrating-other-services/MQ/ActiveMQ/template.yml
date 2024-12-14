@@ -1,0 +1,173 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: ActiveMQ triggered Lambda
+Parameters:
+  # Project Name Parameter
+  ProjectPrefix:
+    Type: String
+    Default: ""
+
+  VpcId:
+    Type: String
+  PublicSubnetAId:
+    Type: String
+  PublicSubnetCId:
+    Type: String
+  EngineVersion:
+    Type: String
+  HostInstanceType:
+    Type: String
+  MqConfigurationId:
+    Type: String
+  MqConfigurationRevision:
+    Type: Integer
+
+Resources:
+  Broker:
+    Type: AWS::AmazonMQ::Broker
+    Properties:
+      AutoMinorVersionUpgrade: true
+      BrokerName: !Sub ${ProjectPrefix}MyComplexActiveBroker
+      Configuration:
+        Id: !Ref MqConfigurationId
+        Revision: !Ref MqConfigurationRevision
+      DeploymentMode: ACTIVE_STANDBY_MULTI_AZ
+      EngineType: ACTIVEMQ
+      EngineVersion: !Ref EngineVersion
+      HostInstanceType: !Ref HostInstanceType
+      Logs:
+        General: true
+        Audit: false
+      MaintenanceWindowStartTime:
+        DayOfWeek: Sunday
+        TimeOfDay: 06:00
+        TimeZone: UTC
+      PubliclyAccessible: true
+      SecurityGroups:
+        - !Ref SecurityGroupForActiveMQ
+      StorageType: efs
+      SubnetIds:
+        - !Ref PublicSubnetAId
+        - !Ref PublicSubnetCId
+      Users:
+        - ConsoleAccess: true
+          Password: AmazonMqPassword
+          Username: AmazonMqUsername
+        - Password: AmazonMqPassword2
+          Username: AmazonMqUsername2
+        - Groups:
+            - MyGroup1
+            - MyGroup2
+          Password: AmazonMqPassword3
+          Username: AmazonMqUsername3
+
+  SecurityGroupForActiveMQ:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub ${ProjectPrefix}SecurityGroupForActiveMQ
+      GroupDescription: This is for SecurityGroupForActiveMQ
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - CidrIp: "0.0.0.0/0"
+          Description: ActiveMQ Web Console
+          FromPort: 8162
+          IpProtocol: tcp
+          ToPort: 8162
+        - CidrIp: "0.0.0.0/0"
+          FromPort: 61617
+          IpProtocol: tcp
+          ToPort: 61617
+      Tags:
+        - Key: Name
+          Value: !Sub ${ProjectPrefix}SecurityGroupForActiveMQ
+
+  # Currently, you can't delete a configuration. So we'll associate an existing configuration rather than creating a new one.
+  # https://docs.aws.amazon.com/amazon-mq/latest/developer-guide/amazon-mq-broker-configuration-parameters.html
+  #
+  # Configuration:
+  #   Type: AWS::AmazonMQ::Configuration
+  #   Properties:
+  #     Data:
+  #       "Fn::Base64": |
+  #         <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+  #         <broker xmlns="http://activemq.apache.org/schema/core" schedulePeriodForDestinationPurge="10000">
+  #           <destinationPolicy>
+  #             <policyMap>
+  #               <policyEntries>
+  #                 <policyEntry topic=">" gcInactiveDestinations="true" inactiveTimoutBeforeGC="600000">
+  #                   <pendingMessageLimitStrategy>
+  #                     <constantPendingMessageLimitStrategy limit="3000"/>
+  #                   </pendingMessageLimitStrategy>
+  #                 </policyEntry>
+  #                 <policyEntry queue=">" gcInactiveDestinations="true" inactiveTimoutBeforeGC="600000" />
+  #               </policyEntries>
+  #             </policyMap>
+  #           </destinationPolicy>
+  #           <plugins>
+  #           </plugins>
+  #         </broker>
+  #     EngineType: ACTIVEMQ
+  #     EngineVersion: !Ref EngineVersion
+  #     Name: !Sub ${ProjectPrefix}activemq-configuration
+
+  # ConfigurationAssociation:
+  #   Type: AWS::AmazonMQ::ConfigurationAssociation
+  #   Properties:
+  #     Broker: !Ref Broker
+  #     Configuration:
+  #       Id: !Ref Configuration
+  #       Revision: !Sub ${Configuration.Revision}
+
+  EventSourceMapping:
+    Type: AWS::Lambda::EventSourceMapping
+    Properties:
+      BatchSize: 100
+      EventSourceArn: !Sub ${Broker.Arn}
+      FunctionName: !Sub ${TargetLambdaFunction.Arn}
+      MaximumBatchingWindowInSeconds: 500
+
+  #-------------------------------------------------------
+  # CloudWatch LogGroup
+  #-------------------------------------------------------
+  TargetLambdaFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${TargetLambdaFunction}
+
+  #-------------------------------------------------------
+  # Lambda
+  #-------------------------------------------------------
+  TargetLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: Lambda/lambda_function
+      FunctionName: lambda_function
+      Handler: lambda_function.lambda_handler
+      MemorySize: 128
+      Role: !Sub ${LambdaRole.Arn}
+      Runtime: python3.13
+      Timeout: 900
+      Tracing: Active
+      Environment:
+        Variables:
+          LOG_LEVEL: DEBUG
+
+  # ------------------------------------------------------------#
+  # IAM
+  # ------------------------------------------------------------#
+  LambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AdministratorAccess
+      Path: /
+      RoleName: !Sub ${ProjectPrefix}LambdaRole

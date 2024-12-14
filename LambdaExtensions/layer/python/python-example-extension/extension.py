@@ -30,19 +30,18 @@ def handle_signal(signal, frame):
 
 def register_extension():
     print(f"[{LAMBDA_EXTENSION_NAME}] Registering...", flush=True)
-    headers = {
-        'Lambda-Extension-Name': LAMBDA_EXTENSION_NAME,
-    }
-    payload = {
-        'events': [
-            'INVOKE',
-            'SHUTDOWN'
-        ],
-    }
+
     response = requests.post(
         url=f"http://{AWS_LAMBDA_RUNTIME_API}/2020-01-01/extension/register",
-        json=payload,
-        headers=headers
+        json={
+            'events': [
+                'INVOKE',
+                'SHUTDOWN'
+            ],
+        },
+        headers={
+            'Lambda-Extension-Name': LAMBDA_EXTENSION_NAME,
+        }
     )
     ext_id = response.headers['Lambda-Extension-Identifier']
     print(f"[{LAMBDA_EXTENSION_NAME}] Registered with ID: {ext_id}", flush=True)
@@ -51,14 +50,13 @@ def register_extension():
 
 
 def process_events(ext_id):
-    headers = {
-        'Lambda-Extension-Identifier': ext_id
-    }
     while True:
         print(f"[{LAMBDA_EXTENSION_NAME}] Waiting for event...", flush=True)
         response = requests.get(
             url=f"http://{AWS_LAMBDA_RUNTIME_API}/2020-01-01/extension/event/next",
-            headers=headers,
+            headers={
+                'Lambda-Extension-Identifier': ext_id
+            },
             timeout=None
         )
         event = json.loads(response.text)

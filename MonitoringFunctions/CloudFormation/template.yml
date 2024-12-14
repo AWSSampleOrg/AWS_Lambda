@@ -58,7 +58,7 @@ Resources:
       Handler: lambda_function.lambda_handler
       MemorySize: 128
       Role: !Sub ${LambdaRole.Arn}
-      Runtime: python3.12
+      Runtime: python3.13
       Timeout: 900
       Tracing: Active
       Environment:
