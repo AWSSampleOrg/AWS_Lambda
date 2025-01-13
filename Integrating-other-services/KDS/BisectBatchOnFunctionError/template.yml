@@ -1,43 +1,34 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
-Description: API Gateway Sample
+Description: KDS triggered Lambda
 Parameters:
-  # Project Name Parameter
   ProjectPrefix:
     Type: String
     Default: ""
 
 Resources:
-  #-------------------------------------------------------
-  # CloudWatch Alarm
-  #-------------------------------------------------------
-  LambdaDurationAlarm:
-    Type: AWS::CloudWatch::Alarm
+  KinesisDataStream:
+    Type: AWS::Kinesis::Stream
     Properties:
-      ActionsEnabled: true
-      AlarmActions:
-        - !Ref SNSTopic
-      AlarmDescription: !Sub This is the Duration alarm for ${TargetLambdaFunction}
-      AlarmName: !Sub ${TargetLambdaFunction}Duration
-      # CloudWatch Alarm would alert when it happens "EvaluationPeriods" times that the state of "ComparisonOperator" happens "Threshold" times in "Period" seconds.
-      ComparisonOperator: GreaterThanThreshold
-      Dimensions:
-        - Name: FunctionName
-          Value: !Ref TargetLambdaFunction
-      EvaluationPeriods: 1
-      MetricName: Duration
-      Namespace: AWS/Lambda
-      Period: 600
-      Statistic: Average
-      Threshold: 5
+      Name: !Sub ${ProjectPrefix}stream
+      RetentionPeriodHours: 24
+      ShardCount: 3
+      StreamModeDetails:
+        StreamMode: PROVISIONED # ON_DEMAND
 
-  #-------------------------------------------------------
-  # SNS
-  #-------------------------------------------------------
-  SNSTopic:
-    Type: AWS::SNS::Topic
+  EventSourceMapping:
+    Type: AWS::Lambda::EventSourceMapping
     Properties:
-      TopicName: SNSTopic
+      BatchSize: 100
+      BisectBatchOnFunctionError: true
+      Enabled: true
+      EventSourceArn: !Sub ${KinesisDataStream.Arn}
+      FunctionName: !Sub ${TargetLambdaFunction.Arn}
+      MaximumBatchingWindowInSeconds: 0
+      MaximumRecordAgeInSeconds: -1
+      MaximumRetryAttempts: -1
+      ParallelizationFactor: 1
+      StartingPosition: TRIM_HORIZON
 
   #-------------------------------------------------------
   # CloudWatch LogGroup
@@ -81,7 +72,6 @@ Resources:
             Action:
               - sts:AssumeRole
       ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AWSLambda_FullAccess
-        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AdministratorAccess
       Path: /
-      RoleName: LambdaRole
+      RoleName: !Sub ${ProjectPrefix}LambdaRole
