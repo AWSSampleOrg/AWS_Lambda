@@ -24,5 +24,5 @@
   // ShellScript
   "shellformat.path": "/opt/homebrew/bin/shfmt",
   // CSpell
-  "cSpell.words": []
+  "cSpell.words": ["__pycache__"]
 }

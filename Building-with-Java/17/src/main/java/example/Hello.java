@@ -8,8 +8,8 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 record LambdaEvent(String key1, String key2, String key3) {
 }
 
-// Handler value: example.RequestHandlerClass::handleRequest
-public class RequestHandlerClass implements RequestHandler<LambdaEvent, String>{
+// Handler value: example.Hello::handleRequest
+public class Hello implements RequestHandler<LambdaEvent, String> {
 
   @Override
   public String handleRequest(LambdaEvent event, Context context) {
