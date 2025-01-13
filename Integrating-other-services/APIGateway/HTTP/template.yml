@@ -1,0 +1,128 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: API Gateway Sample
+Parameters:
+  ProjectPrefix:
+    Type: String
+    Default: ""
+
+  APIGatewayStageName:
+    Type: String
+    AllowedValues:
+      - test
+      - prod
+
+Resources:
+  #-------------------------------------------------------
+  # API Gateway
+  #-------------------------------------------------------
+  APIGatewayHttpApi:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: !Sub ${ProjectPrefix}http_api
+      ProtocolType: HTTP
+
+  APIGatewayHttpApiLambdaProxy:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref APIGatewayHttpApi
+      IntegrationType: AWS_PROXY
+      IntegrationMethod: POST
+      PayloadFormatVersion: "2.0"
+      IntegrationUri: !Sub "arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${TargetLambdaFunction.Arn}/invocations"
+
+  APIGatewayHttpApiRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref APIGatewayHttpApi
+      RouteKey: GET /lambda_handler
+      AuthorizationType: NONE
+      Target: !Sub integrations/${APIGatewayHttpApiLambdaProxy}
+
+  APIGatewayHttpApiStage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      AutoDeploy: true
+      StageName: !Sub ${APIGatewayStageName}
+      ApiId: !Ref APIGatewayHttpApi
+      AccessLogSettings:
+        DestinationArn: !GetAtt APIGatewayAccessLogGroup.Arn
+        Format: >-
+          { "accountId": "$context.accountId",
+          "apiId": "$context.apiId",
+          "awsEndpointRequestId": "$context.awsEndpointRequestId",
+          "httpMethod":"$context.httpMethod",
+          "requestId":"$context.requestId",
+          "requestTime":"$context.requestTime",
+          "requestTimeEpoch":"$context.requestTimeEpoch",
+          "responseLatency":"$context.responseLatency",
+          "responseLength":"$context.responseLength",
+          "routeKey":"$context.routeKey",
+          "stage":"$context.stage",
+          "status": "$context.status" }
+
+  APIGatewayLambdaInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref TargetLambdaFunction
+      Principal: apigateway.amazonaws.com
+
+  #-------------------------------------------------------
+  # CloudWatch LogGroup
+  #-------------------------------------------------------
+  APIGatewayAccessLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub API-Gateway-Access-Logs_${APIGatewayHttpApi}/${APIGatewayStageName}
+
+  TargetLambdaFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${TargetLambdaFunction}
+
+  #-------------------------------------------------------
+  # Lambda
+  #-------------------------------------------------------
+  TargetLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: Lambda/lambda_handler
+      FunctionName: !Sub ${ProjectPrefix}lambda_handler
+      Handler: lambda_handler.lambda_handler
+      MemorySize: 128
+      Role: !Sub ${LambdaRole.Arn}
+      Runtime: python3.13
+      Timeout: 40
+      Tracing: Active
+      Environment:
+        Variables:
+          LOG_LEVEL: DEBUG
+
+  # ------------------------------------------------------------#
+  # IAM
+  # ------------------------------------------------------------#
+  LambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AWSLambda_FullAccess
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Path: /
+      RoleName: !Sub ${ProjectPrefix}LambdaRole
+
+Outputs:
+  APIGatewayHttpApiEndpoint:
+    Description: APIGatewayHttpApiEndpoint
+    Value: !Sub ${APIGatewayHttpApi.ApiEndpoint}
+    Export:
+      Name: APIGatewayHttpApiEndpoint
