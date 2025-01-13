@@ -1,0 +1,132 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: API Gateway Sample
+Parameters:
+  ProjectPrefix:
+    Type: String
+    Default: ""
+
+  APIGatewayStageName:
+    Type: String
+    AllowedValues:
+      - test
+      - prod
+
+Globals:
+  Api:
+    OpenApiVersion: 3.0.1
+
+Resources:
+  #-------------------------------------------------------
+  # API Gateway
+  #-------------------------------------------------------
+  APIGatewayAccount:
+    Type: AWS::ApiGateway::Account
+    Properties:
+      CloudWatchRoleArn: !Sub ${APIGatewayRole.Arn}
+
+  APIGatewayRestApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      # access logging
+      # https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html#context-variable-reference?cmpid=docs_apigateway_console
+      AccessLogSetting:
+        DestinationArn: !Sub ${APIGatewayAccessLogGroup.Arn}
+        Format: '{ "requestId":"$context.requestId", "extendedRequestId":"$context.extendedRequestId", "ip": "$context.identity.sourceIp", "caller":"$context.identity.caller", "user":"$context.identity.user", "requestTime":"$context.requestTime", "httpMethod":"$context.httpMethod", "resourcePath":"$context.resourcePath", "status":"$context.status", "protocol":"$context.protocol", "responseLength":"$context.responseLength" }'
+      Name: !Sub ${ProjectPrefix}rest_api
+      DefinitionBody:
+        Fn::Transform:
+          Name: AWS::Include
+          Parameters:
+            Location: swagger.yml
+      MethodSettings:
+        # execution logging
+        # https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-logging.html
+        - DataTraceEnabled: true
+          LoggingLevel: INFO
+          ResourcePath: "/*"
+          HttpMethod: "*"
+          MetricsEnabled: true
+      TracingEnabled: true
+      StageName: !Sub ${APIGatewayStageName}
+
+  APIGatewayLambdaInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref TargetLambdaFunction
+      Principal: apigateway.amazonaws.com
+
+  #-------------------------------------------------------
+  # CloudWatch LogGroup
+  #-------------------------------------------------------
+  APIGatewayExecutionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub API-Gateway-Execution-Logs_${APIGatewayRestApi}/${APIGatewayStageName}
+
+  APIGatewayAccessLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub API-Gateway-Access-Logs_${APIGatewayRestApi}/${APIGatewayStageName}
+
+  TargetLambdaFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${TargetLambdaFunction}
+
+  #-------------------------------------------------------
+  # Lambda
+  #-------------------------------------------------------
+  TargetLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: Lambda/lambda_handler
+      FunctionName: !Sub ${ProjectPrefix}lambda_handler
+      Handler: lambda_handler.lambda_handler
+      MemorySize: 128
+      Role: !Sub ${LambdaRole.Arn}
+      Runtime: python3.13
+      Timeout: 29
+      Tracing: Active
+      Environment:
+        Variables:
+          LOG_LEVEL: DEBUG
+
+  # ------------------------------------------------------------#
+  # IAM
+  # ------------------------------------------------------------#
+  LambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AWSLambda_FullAccess
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Path: /
+      RoleName: !Sub ${ProjectPrefix}LambdaRole
+
+  APIGatewayRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - apigateway.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs
+      Path: /
+      RoleName: !Sub ${ProjectPrefix}APIGatewayRole
