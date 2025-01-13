@@ -1,43 +1,22 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
-Description: API Gateway Sample
+Description: SQS triggered Lambda
 Parameters:
-  # Project Name Parameter
   ProjectPrefix:
     Type: String
     Default: ""
+  BucketName:
+    Type: String
 
 Resources:
-  #-------------------------------------------------------
-  # CloudWatch Alarm
-  #-------------------------------------------------------
-  LambdaDurationAlarm:
-    Type: AWS::CloudWatch::Alarm
+  S3:
+    Type: AWS::S3::Bucket
     Properties:
-      ActionsEnabled: true
-      AlarmActions:
-        - !Ref SNSTopic
-      AlarmDescription: !Sub This is the Duration alarm for ${TargetLambdaFunction}
-      AlarmName: !Sub ${TargetLambdaFunction}Duration
-      # CloudWatch Alarm would alert when it happens "EvaluationPeriods" times that the state of "ComparisonOperator" happens "Threshold" times in "Period" seconds.
-      ComparisonOperator: GreaterThanThreshold
-      Dimensions:
-        - Name: FunctionName
-          Value: !Ref TargetLambdaFunction
-      EvaluationPeriods: 1
-      MetricName: Duration
-      Namespace: AWS/Lambda
-      Period: 600
-      Statistic: Average
-      Threshold: 5
-
-  #-------------------------------------------------------
-  # SNS
-  #-------------------------------------------------------
-  SNSTopic:
-    Type: AWS::SNS::Topic
-    Properties:
-      TopicName: SNSTopic
+      BucketName: !Sub ${BucketName}
+      NotificationConfiguration:
+        LambdaConfigurations:
+          - Event: "s3:ObjectCreated:*"
+            Function: !Sub ${TargetLambdaFunction.Arn}
 
   #-------------------------------------------------------
   # CloudWatch LogGroup
@@ -65,6 +44,14 @@ Resources:
         Variables:
           LOG_LEVEL: DEBUG
 
+  S3LambdaInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref TargetLambdaFunction
+      Principal: s3.amazonaws.com
+      SourceArn: !Sub arn:aws:s3:::${BucketName}
+
   # ------------------------------------------------------------#
   # IAM
   # ------------------------------------------------------------#
@@ -81,7 +68,6 @@ Resources:
             Action:
               - sts:AssumeRole
       ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AWSLambda_FullAccess
-        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AdministratorAccess
       Path: /
-      RoleName: LambdaRole
+      RoleName: !Sub ${ProjectPrefix}LambdaRole

@@ -12,7 +12,7 @@ Resources:
     Properties:
       FifoQueue: false
       ContentBasedDeduplication: true
-      QueueName: !Ref SQSQueueName
+      QueueName: !Sub ${ProjectPrefix}queue
 
   EventSourceMapping:
     Type: AWS::Lambda::EventSourceMapping
@@ -37,7 +37,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: Lambda/lambda_function
-      FunctionName: lambda_function
+      FunctionName: !Sub ${ProjectPrefix}lambda_function
       Handler: lambda_function.lambda_handler
       MemorySize: 128
       Role: !Sub ${LambdaRole.Arn}

@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
-Description: API Gateway Sample
+Description: Lambda function URL without Auth
 Parameters:
   # Project Name Parameter
   ProjectPrefix:
@@ -8,37 +8,6 @@ Parameters:
     Default: ""
 
 Resources:
-  #-------------------------------------------------------
-  # CloudWatch Alarm
-  #-------------------------------------------------------
-  LambdaDurationAlarm:
-    Type: AWS::CloudWatch::Alarm
-    Properties:
-      ActionsEnabled: true
-      AlarmActions:
-        - !Ref SNSTopic
-      AlarmDescription: !Sub This is the Duration alarm for ${TargetLambdaFunction}
-      AlarmName: !Sub ${TargetLambdaFunction}Duration
-      # CloudWatch Alarm would alert when it happens "EvaluationPeriods" times that the state of "ComparisonOperator" happens "Threshold" times in "Period" seconds.
-      ComparisonOperator: GreaterThanThreshold
-      Dimensions:
-        - Name: FunctionName
-          Value: !Ref TargetLambdaFunction
-      EvaluationPeriods: 1
-      MetricName: Duration
-      Namespace: AWS/Lambda
-      Period: 600
-      Statistic: Average
-      Threshold: 5
-
-  #-------------------------------------------------------
-  # SNS
-  #-------------------------------------------------------
-  SNSTopic:
-    Type: AWS::SNS::Topic
-    Properties:
-      TopicName: SNSTopic
-
   #-------------------------------------------------------
   # CloudWatch LogGroup
   #-------------------------------------------------------
@@ -50,12 +19,18 @@ Resources:
   #-------------------------------------------------------
   # Lambda
   #-------------------------------------------------------
+  TargetLambdaFunctionUrl:
+    Type: AWS::Lambda::Url
+    Properties:
+      AuthType: NONE
+      TargetFunctionArn: !Sub ${TargetLambdaFunction.Arn}
+
   TargetLambdaFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: Lambda/lambda_function
-      FunctionName: !Sub ${ProjectPrefix}lambda_function
-      Handler: lambda_function.lambda_handler
+      CodeUri: Lambda/lambda_handler
+      FunctionName: !Sub ${ProjectPrefix}lambda_handler
+      Handler: lambda_handler.lambda_handler
       MemorySize: 128
       Role: !Sub ${LambdaRole.Arn}
       Runtime: python3.13
@@ -64,6 +39,14 @@ Resources:
       Environment:
         Variables:
           LOG_LEVEL: DEBUG
+
+  LambdaInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunctionUrl
+      FunctionName: !Ref TargetLambdaFunction
+      FunctionUrlAuthType: NONE
+      Principal: "*"
 
   # ------------------------------------------------------------#
   # IAM
@@ -84,4 +67,4 @@ Resources:
         - arn:aws:iam::aws:policy/AWSLambda_FullAccess
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
       Path: /
-      RoleName: LambdaRole
+      RoleName: !Sub ${ProjectPrefix}LambdaRole
