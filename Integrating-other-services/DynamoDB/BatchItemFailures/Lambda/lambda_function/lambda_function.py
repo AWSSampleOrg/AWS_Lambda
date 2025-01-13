@@ -25,6 +25,8 @@ def lambda_handler(event, context):
                 old_image = record["dynamodb"]["OldImage"]
 
         except Exception as e:
+            logger.error(e)
+            logger.error(record)
             # Return failed record's sequence number
             return {"batchItemFailures":[{"itemIdentifier": sequence_number}]}
 

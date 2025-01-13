@@ -12,7 +12,7 @@ Resources:
     Properties:
       Name: !Sub ${ProjectPrefix}stream
       RetentionPeriodHours: 24
-      ShardCount: 3
+      ShardCount: 1
       StreamModeDetails:
         StreamMode: PROVISIONED # ON_DEMAND
 
@@ -20,9 +20,19 @@ Resources:
     Type: AWS::Lambda::EventSourceMapping
     Properties:
       BatchSize: 100
+      BisectBatchOnFunctionError: false
+      Enabled: true
       EventSourceArn: !Sub ${KinesisDataStream.Arn}
       FunctionName: !Sub ${TargetLambdaFunction.Arn}
+      FunctionResponseTypes:
+        - "ReportBatchItemFailures"
       MaximumBatchingWindowInSeconds: 0
+      MaximumRecordAgeInSeconds: -1
+      MaximumRetryAttempts: -1
+      MetricsConfig:
+        Metrics:
+          - EventCount
+      ParallelizationFactor: 1
       StartingPosition: TRIM_HORIZON
 
   #-------------------------------------------------------
@@ -40,7 +50,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: Lambda/lambda_function
-      FunctionName: lambda_function
+      FunctionName: !Sub ${ProjectPrefix}lambda_function
       Handler: lambda_function.lambda_handler
       MemorySize: 128
       Role: !Sub ${LambdaRole.Arn}
