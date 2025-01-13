@@ -18,7 +18,7 @@ def lambda_handler(event, context):
             sequence_number = record["kinesis"]["sequenceNumber"]
 
             payload = base64.b64decode(record["kinesis"]["data"]).decode()
-            logger.debug(payload)
+            logger.debug(int(payload))
 
         except Exception as e:
             # Return failed record's sequence number
