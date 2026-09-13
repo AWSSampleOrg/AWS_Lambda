@@ -5,8 +5,8 @@ Download Kafka CLI like `kafka-topics.sh`.
 Search target version's tgz file under https://archive.apache.org/dist/kafka/
 
 ```sh
-wget https://archive.apache.org/dist/kafka/3.6.0/kafka_2.13-3.6.0.tgz
-tar -xzf kafka_2.13-3.6.0.tgz
+wget https://archive.apache.org/dist/kafka/3.9.0/kafka_2.13-3.9.0.tgz
+tar -xzf kafka_2.13-3.9.0.tgz
 ```
 
 # Get connection strings
@@ -55,7 +55,7 @@ https://docs.aws.amazon.com/msk/latest/developerguide/create-topic.html
 CLUSTER_ARN=""
 
 BS=$(aws kafka get-bootstrap-brokers --cluster-arn ${CLUSTER_ARN} --query BootstrapBrokerStringSaslIam --output text)
-./bin/kafka-topics.sh --bootstrap-server $BS --describe --topic ExampleTopic10
+./bin/kafka-topics.sh --bootstrap-server $BS --describe --topic MSKTutorialTopic
 ```
 
 # Produce and consume

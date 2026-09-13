@@ -8,7 +8,7 @@ Parameters:
     Default: ""
 
   VpcId:
-    Type: String
+    Type: AWS::EC2::VPC::Id
 
   PrivateSubnetAID:
     Type: String

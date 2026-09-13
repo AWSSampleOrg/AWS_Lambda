@@ -8,14 +8,14 @@ Parameters:
     Default: ""
 
   VpcId:
-    Type: String
+    Type: AWS::EC2::VPC::Id
 
   PrivateSubnetAId:
-    Type: String
+    Type: AWS::EC2::Subnet::Id
   # PrivateSubnetBId:
   #   Type: String
   PrivateSubnetCId:
-    Type: String
+    Type: AWS::EC2::Subnet::Id
   # PrivateSubnetDId:
   #   Type: String
 
@@ -42,7 +42,7 @@ Resources:
         EncryptionInTransit:
           ClientBroker: TLS
           InCluster: true
-      KafkaVersion: 3.6.0
+      KafkaVersion: 3.9.x.kraft
       # The target number of broker nodes in the cluster must be a multiple of the number of availability zones (AZs) in the client subnets parameter. For example, a cluster with subnets in two AZs must have a target number of nodes that is a multiple of two.
       NumberOfBrokerNodes: 2
       StorageMode: LOCAL
@@ -139,12 +139,12 @@ Resources:
   TargetLambdaFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: Lambda/lambda_function
-      FunctionName: !Sub ${ProjectPrefix}lambda_function
+      CodeUri: Lambda
+      FunctionName: !Sub ${ProjectPrefix}MSK-Lambda-Function
       Handler: lambda_function.lambda_handler
       MemorySize: 128
       Role: !Sub ${LambdaRole.Arn}
-      Runtime: python3.13
+      Runtime: python3.15
       # Max 14 minutes
       # https://docs.aws.amazon.com/lambda/latest/dg/with-msk-process.html
       Timeout: 840
@@ -152,6 +152,20 @@ Resources:
       Environment:
         Variables:
           LOG_LEVEL: DEBUG
+
+  TargetLambdaFunctionEventSourceMapping:
+    Type: AWS::Lambda::EventSourceMapping
+    Properties:
+      Enabled: true
+      EventSourceArn: !Ref MSKCluster
+      FunctionName: !Ref TargetLambdaFunction
+      Topics:
+        - MSKTutorialTopic
+      StartingPosition: LATEST
+      BatchSize: 10
+      # ProvisionedPollerConfig:
+      #   MinimumPollers: 1
+      #   MaximumPollers: 2
 
   # ------------------------------------------------------------#
   # IAM
@@ -174,6 +188,7 @@ Resources:
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
+              # Data plane: consuming records with IAM auth.
               - Effect: Allow
                 Action:
                   - kafka-cluster:Connect
@@ -183,7 +198,24 @@ Resources:
                   - kafka-cluster:ReadData
                   - kafka-cluster:DescribeClusterDynamicConfiguration
                 Resource: "*"
+              # Control plane: Lambda calls these to discover the bootstrap
+              # brokers and validate the cluster's auth settings.
+              - Effect: Allow
+                Action:
+                  - kafka:DescribeCluster
+                  - kafka:DescribeClusterV2
+                  - kafka:GetBootstrapBrokers
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - ec2:CreateNetworkInterface
+                  - ec2:DescribeNetworkInterfaces
+                  - ec2:DeleteNetworkInterface
+                  - ec2:DescribeVpcs
+                  - ec2:DescribeSubnets
+                  - ec2:DescribeSecurityGroups
+                Resource: "*"
               - Effect: Allow
                 Action: logs:*
                 Resource: "*"
-      RoleName: !Sub ${ProjectPrefix}LambdaRole
+      RoleName: !Sub ${ProjectPrefix}MSK-Lambda-IAM-Auth-Role
