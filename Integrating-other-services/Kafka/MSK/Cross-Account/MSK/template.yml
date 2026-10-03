@@ -1,0 +1,129 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: MSK triggered Lambda
+Parameters:
+  # Project Name Parameter
+  ProjectPrefix:
+    Type: String
+    Default: ""
+
+  FunctionAccountId:
+    Type: String
+
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+
+  PrivateSubnetAId:
+    Type: AWS::EC2::Subnet::Id
+  # PrivateSubnetBId:
+  #   Type: String
+  PrivateSubnetCId:
+    Type: AWS::EC2::Subnet::Id
+  # PrivateSubnetDId:
+  #   Type: String
+
+  VpcConnectivityIam:
+    Type: String
+    Default: "false"
+    AllowedValues: ["false", "true"]
+
+Conditions:
+  EnableVpcConnectivity: !Equals [!Ref VpcConnectivityIam, "true"]
+
+Resources:
+  MSKCluster:
+    Type: AWS::MSK::Cluster
+    Properties:
+      BrokerNodeGroupInfo:
+        ClientSubnets:
+          - !Ref PrivateSubnetAId
+          - !Ref PrivateSubnetCId
+        InstanceType: kafka.m7g.large
+        SecurityGroups:
+          - !Ref SecurityGroupForMSK
+        StorageInfo:
+          EBSStorageInfo:
+            VolumeSize: 100
+        ConnectivityInfo:
+          PublicAccess:
+            Type: DISABLED
+          VpcConnectivity:
+            ClientAuthentication:
+              Sasl:
+                Iam:
+                  # https://docs.aws.amazon.com/msk/latest/developerguide/mvpc-cluster-owner-action-turn-on.html
+                  # "The MSK cluster owner needs to make configuration settings on the MSK cluster after the cluster is created and in an ACTIVE state."
+                  # So enable this after the MSK cluster is created.
+                  Enabled: !If [EnableVpcConnectivity, true, false]
+      ClusterName: !Sub ${ProjectPrefix}Cluster
+      ClientAuthentication:
+        Sasl:
+          Iam:
+            Enabled: true
+      EncryptionInfo:
+        EncryptionInTransit:
+          ClientBroker: TLS
+          InCluster: true
+      KafkaVersion: 3.9.x.kraft
+      # The target number of broker nodes in the cluster must be a multiple of the number of availability zones (AZs) in the client subnets parameter. For example, a cluster with subnets in two AZs must have a target number of nodes that is a multiple of two.
+      NumberOfBrokerNodes: 2
+      StorageMode: LOCAL
+
+  MSKClusterPolicy:
+    Type: AWS::MSK::ClusterPolicy
+    Properties:
+      ClusterArn: !Ref MSKCluster
+      Policy:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub arn:${AWS::Partition}:iam::${FunctionAccountId}:root
+            Action:
+              - kafka:CreateVpcConnection
+              - kafka:DescribeCluster
+              - kafka:DescribeClusterV2
+              - kafka:GetBootstrapBrokers
+            Resource: !Ref MSKCluster
+          - Effect: Allow
+            Principal:
+              AWS: !Sub arn:${AWS::Partition}:iam::${FunctionAccountId}:root
+            Action:
+              - kafka-cluster:Connect
+              - kafka-cluster:DescribeCluster
+              - kafka-cluster:DescribeClusterDynamicConfiguration
+              - kafka-cluster:DescribeGroup
+              - kafka-cluster:AlterGroup
+              - kafka-cluster:DescribeTopic
+              - kafka-cluster:ReadData
+            Resource:
+              - !Ref MSKCluster
+              - !Sub arn:${AWS::Partition}:kafka:${AWS::Region}:${AWS::AccountId}:topic/${ProjectPrefix}Cluster/*
+              - !Sub arn:${AWS::Partition}:kafka:${AWS::Region}:${AWS::AccountId}:group/${ProjectPrefix}Cluster/*
+
+  SecurityGroupForMSK:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub ${ProjectPrefix}SecurityGroupForMSK
+      GroupDescription: This is for SecurityGroupForMSK
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        # IAM
+        - CidrIp: "0.0.0.0/0"
+          Description: SecurityGroupForMSK
+          FromPort: 9098
+          IpProtocol: tcp
+          ToPort: 9098
+        - CidrIp: "0.0.0.0/0"
+          Description: SecurityGroupForMSK multi-VPC connectivity
+          FromPort: 14001
+          IpProtocol: tcp
+          ToPort: 14100
+      Tags:
+        - Key: Name
+          Value: !Sub ${ProjectPrefix}SecurityGroupForMSK
+
+Outputs:
+  ClusterArn:
+    Description: Set this as TARGET_CLUSTER_ARN in ../Lambda/deploy.sh
+    Value: !Ref MSKCluster

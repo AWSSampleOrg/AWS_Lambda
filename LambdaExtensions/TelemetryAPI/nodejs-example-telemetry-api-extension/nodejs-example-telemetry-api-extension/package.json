@@ -1,0 +1,9 @@
+{
+  "name": "nodejs-example-telemetry-api-extension",
+  "version": "0.0.1",
+  "main": "index.mjs",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}
