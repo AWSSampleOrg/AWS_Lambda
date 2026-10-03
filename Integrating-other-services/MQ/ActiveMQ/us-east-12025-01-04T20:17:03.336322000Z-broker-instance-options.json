@@ -1,0 +1,296 @@
+{
+  "BrokerInstanceOptions": [
+    {
+      "AvailabilityZones": [
+        {
+          "Name": "us-east-1c"
+        },
+        {
+          "Name": "us-east-1a"
+        },
+        {
+          "Name": "us-east-1e"
+        },
+        {
+          "Name": "us-east-1f"
+        },
+        {
+          "Name": "us-east-1b"
+        },
+        {
+          "Name": "us-east-1d"
+        }
+      ],
+      "EngineType": "ACTIVEMQ",
+      "HostInstanceType": "mq.m4.large",
+      "StorageType": "efs",
+      "SupportedDeploymentModes": [
+        "SINGLE_INSTANCE",
+        "ACTIVE_STANDBY_MULTI_AZ"
+      ],
+      "SupportedEngineVersions": ["5.18", "5.17.6"]
+    },
+    {
+      "AvailabilityZones": [
+        {
+          "Name": "us-east-1c"
+        },
+        {
+          "Name": "us-east-1a"
+        },
+        {
+          "Name": "us-east-1f"
+        },
+        {
+          "Name": "us-east-1b"
+        },
+        {
+          "Name": "us-east-1d"
+        }
+      ],
+      "EngineType": "ACTIVEMQ",
+      "HostInstanceType": "mq.m5.2xlarge",
+      "StorageType": "ebs",
+      "SupportedDeploymentModes": ["SINGLE_INSTANCE"],
+      "SupportedEngineVersions": ["5.18", "5.17.6"]
+    },
+    {
+      "AvailabilityZones": [
+        {
+          "Name": "us-east-1c"
+        },
+        {
+          "Name": "us-east-1a"
+        },
+        {
+          "Name": "us-east-1f"
+        },
+        {
+          "Name": "us-east-1b"
+        },
+        {
+          "Name": "us-east-1d"
+        }
+      ],
+      "EngineType": "ACTIVEMQ",
+      "HostInstanceType": "mq.m5.2xlarge",
+      "StorageType": "efs",
+      "SupportedDeploymentModes": [
+        "SINGLE_INSTANCE",
+        "ACTIVE_STANDBY_MULTI_AZ"
+      ],
+      "SupportedEngineVersions": ["5.18", "5.17.6"]
+    },
+    {
+      "AvailabilityZones": [
+        {
+          "Name": "us-east-1c"
+        },
+        {
+          "Name": "us-east-1a"
+        },
+        {
+          "Name": "us-east-1f"
+        },
+        {
+          "Name": "us-east-1b"
+        },
+        {
+          "Name": "us-east-1d"
+        }
+      ],
+      "EngineType": "ACTIVEMQ",
+      "HostInstanceType": "mq.m5.4xlarge",
+      "StorageType": "ebs",
+      "SupportedDeploymentModes": ["SINGLE_INSTANCE"],
+      "SupportedEngineVersions": ["5.18", "5.17.6"]
+    },
+    {
+      "AvailabilityZones": [
+        {
+          "Name": "us-east-1c"
+        },
+        {
+          "Name": "us-east-1a"
+        },
+        {
+          "Name": "us-east-1f"
+        },
+        {
+          "Name": "us-east-1b"
+        },
+        {
+          "Name": "us-east-1d"
+        }
+      ],
+      "EngineType": "ACTIVEMQ",
+      "HostInstanceType": "mq.m5.4xlarge",
+      "StorageType": "efs",
+      "SupportedDeploymentModes": [
+        "SINGLE_INSTANCE",
+        "ACTIVE_STANDBY_MULTI_AZ"
+      ],
+      "SupportedEngineVersions": ["5.18", "5.17.6"]
+    },
+    {
+      "AvailabilityZones": [
+        {
+          "Name": "us-east-1c"
+        },
+        {
+          "Name": "us-east-1a"
+        },
+        {
+          "Name": "us-east-1f"
+        },
+        {
+          "Name": "us-east-1b"
+        },
+        {
+          "Name": "us-east-1d"
+        }
+      ],
+      "EngineType": "ACTIVEMQ",
+      "HostInstanceType": "mq.m5.large",
+      "StorageType": "ebs",
+      "SupportedDeploymentModes": ["SINGLE_INSTANCE"],
+      "SupportedEngineVersions": ["5.18", "5.17.6"]
+    },
+    {
+      "AvailabilityZones": [
+        {
+          "Name": "us-east-1c"
+        },
+        {
+          "Name": "us-east-1a"
+        },
+        {
+          "Name": "us-east-1f"
+        },
+        {
+          "Name": "us-east-1b"
+        },
+        {
+          "Name": "us-east-1d"
+        }
+      ],
+      "EngineType": "ACTIVEMQ",
+      "HostInstanceType": "mq.m5.large",
+      "StorageType": "efs",
+      "SupportedDeploymentModes": [
+        "SINGLE_INSTANCE",
+        "ACTIVE_STANDBY_MULTI_AZ"
+      ],
+      "SupportedEngineVersions": ["5.18", "5.17.6"]
+    },
+    {
+      "AvailabilityZones": [
+        {
+          "Name": "us-east-1c"
+        },
+        {
+          "Name": "us-east-1a"
+        },
+        {
+          "Name": "us-east-1f"
+        },
+        {
+          "Name": "us-east-1b"
+        },
+        {
+          "Name": "us-east-1d"
+        }
+      ],
+      "EngineType": "ACTIVEMQ",
+      "HostInstanceType": "mq.m5.xlarge",
+      "StorageType": "ebs",
+      "SupportedDeploymentModes": ["SINGLE_INSTANCE"],
+      "SupportedEngineVersions": ["5.18", "5.17.6"]
+    },
+    {
+      "AvailabilityZones": [
+        {
+          "Name": "us-east-1c"
+        },
+        {
+          "Name": "us-east-1a"
+        },
+        {
+          "Name": "us-east-1f"
+        },
+        {
+          "Name": "us-east-1b"
+        },
+        {
+          "Name": "us-east-1d"
+        }
+      ],
+      "EngineType": "ACTIVEMQ",
+      "HostInstanceType": "mq.m5.xlarge",
+      "StorageType": "efs",
+      "SupportedDeploymentModes": [
+        "SINGLE_INSTANCE",
+        "ACTIVE_STANDBY_MULTI_AZ"
+      ],
+      "SupportedEngineVersions": ["5.18", "5.17.6"]
+    },
+    {
+      "AvailabilityZones": [
+        {
+          "Name": "us-east-1c"
+        },
+        {
+          "Name": "us-east-1a"
+        },
+        {
+          "Name": "us-east-1e"
+        },
+        {
+          "Name": "us-east-1f"
+        },
+        {
+          "Name": "us-east-1b"
+        },
+        {
+          "Name": "us-east-1d"
+        }
+      ],
+      "EngineType": "ACTIVEMQ",
+      "HostInstanceType": "mq.t2.micro",
+      "StorageType": "efs",
+      "SupportedDeploymentModes": [
+        "SINGLE_INSTANCE",
+        "ACTIVE_STANDBY_MULTI_AZ"
+      ],
+      "SupportedEngineVersions": ["5.18", "5.17.6"]
+    },
+    {
+      "AvailabilityZones": [
+        {
+          "Name": "us-east-1c"
+        },
+        {
+          "Name": "us-east-1a"
+        },
+        {
+          "Name": "us-east-1f"
+        },
+        {
+          "Name": "us-east-1b"
+        },
+        {
+          "Name": "us-east-1d"
+        }
+      ],
+      "EngineType": "ACTIVEMQ",
+      "HostInstanceType": "mq.t3.micro",
+      "StorageType": "efs",
+      "SupportedDeploymentModes": [
+        "SINGLE_INSTANCE",
+        "ACTIVE_STANDBY_MULTI_AZ"
+      ],
+      "SupportedEngineVersions": ["5.18", "5.17.6"]
+    }
+  ],
+  "MaxResults": 20
+}

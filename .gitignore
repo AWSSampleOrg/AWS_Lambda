@@ -1,0 +1,14 @@
+.DS_Store
+layer.zip
+__pycache__
+node_modules
+packaged_template.yml
+
+DeveloperGuides/LambdaLayers/python/python
+target
+build
+.gradle
+bootstrap
+function.zip
+target
+.vscode

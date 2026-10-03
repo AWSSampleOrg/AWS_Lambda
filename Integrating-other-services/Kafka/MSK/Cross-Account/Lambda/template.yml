@@ -1,0 +1,227 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: MSK triggered Lambda
+Parameters:
+  # Project Name Parameter
+  ProjectPrefix:
+    Type: String
+    Default: ""
+
+  TargetClusterArn:
+    Type: String
+
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+
+  PrivateSubnetAId:
+    Type: AWS::EC2::Subnet::Id
+  # PrivateSubnetBId:
+  #   Type: String
+  PrivateSubnetCId:
+    Type: AWS::EC2::Subnet::Id
+  # PrivateSubnetDId:
+  #   Type: String
+
+  ProvisionedMode:
+    Type: String
+    Default: "false"
+    AllowedValues: ["true", "false"]
+
+Conditions:
+  IsOnDemandMode: !Equals [!Ref ProvisionedMode, "false"]
+
+Resources:
+  #-------------------------------------------------------
+  # MSK VPC Connection
+  #-------------------------------------------------------
+  MSKVpcConnection:
+    Type: AWS::MSK::VpcConnection
+    Properties:
+      Authentication: SASL_IAM
+      TargetClusterArn: !Ref TargetClusterArn
+      VpcId: !Ref VpcId
+      ClientSubnets:
+        - !Ref PrivateSubnetAId
+        - !Ref PrivateSubnetCId
+      SecurityGroups:
+        - !Ref SecurityGroupForVpcConnection
+      Tags:
+        Name: !Sub ${ProjectPrefix}VpcConnection
+
+  SecurityGroupForVpcConnection:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub ${ProjectPrefix}SecurityGroupForVpcConnection
+      GroupDescription: This is for SecurityGroupForVpcConnection
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - CidrIp: "0.0.0.0/0"
+          Description: SecurityGroupForVpcConnection
+          IpProtocol: "-1"
+      Tags:
+        - Key: Name
+          Value: !Sub ${ProjectPrefix}SecurityGroupForVpcConnection
+
+  #-------------------------------------------------------
+  # VPC Endpoint
+  #-------------------------------------------------------
+  STSVpcEndpointSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Condition: IsOnDemandMode
+    Properties:
+      GroupName: !Sub ${ProjectPrefix}STSVpcEndpointSecurityGroup
+      GroupDescription: This is for STSVpcEndpointSecurityGroup
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - CidrIp: "0.0.0.0/0"
+          Description: STSVpcEndpointSecurityGroup
+          FromPort: 443
+          IpProtocol: tcp
+          ToPort: 443
+      Tags:
+        - Key: Name
+          Value: !Sub ${ProjectPrefix}STSVpcEndpointSecurityGroup
+
+  STSVpcEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Condition: IsOnDemandMode
+    Properties:
+      VpcEndpointType: "Interface"
+      ServiceName: !Sub com.amazonaws.${AWS::Region}.sts
+      VpcId: !Ref VpcId
+      PrivateDnsEnabled: true
+      SubnetIds:
+        - !Ref PrivateSubnetAId
+        - !Ref PrivateSubnetCId
+      SecurityGroupIds:
+        - !Ref STSVpcEndpointSecurityGroup
+
+  LambdaVpcEndpointSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Condition: IsOnDemandMode
+    Properties:
+      GroupName: !Sub ${ProjectPrefix}LambdaVpcEndpointSecurityGroup
+      GroupDescription: This is for LambdaVpcEndpointSecurityGroup
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - CidrIp: "0.0.0.0/0"
+          Description: LambdaVpcEndpointSecurityGroup
+          FromPort: 443
+          IpProtocol: tcp
+          ToPort: 443
+      Tags:
+        - Key: Name
+          Value: !Sub ${ProjectPrefix}LambdaVpcEndpointSecurityGroup
+
+  LambdaVpcEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Condition: IsOnDemandMode
+    Properties:
+      VpcEndpointType: Interface
+      ServiceName: !Sub com.amazonaws.${AWS::Region}.lambda
+      VpcId: !Ref VpcId
+      PrivateDnsEnabled: true
+      SubnetIds:
+        - !Ref PrivateSubnetAId
+        - !Ref PrivateSubnetCId
+      SecurityGroupIds:
+        - !Ref LambdaVpcEndpointSecurityGroup
+
+  #-------------------------------------------------------
+  # CloudWatch LogGroup
+  #-------------------------------------------------------
+  TargetLambdaFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${TargetLambdaFunction}
+
+  #-------------------------------------------------------
+  # Lambda
+  #-------------------------------------------------------
+  TargetLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: Lambda
+      FunctionName: !Sub ${ProjectPrefix}MSK-Lambda-Function
+      Handler: lambda_function.lambda_handler
+      MemorySize: 128
+      Role: !Sub ${LambdaRole.Arn}
+      Runtime: python3.15
+      # Max 14 minutes
+      # https://docs.aws.amazon.com/lambda/latest/dg/with-msk-process.html
+      Timeout: 840
+      Tracing: Active
+      Environment:
+        Variables:
+          LOG_LEVEL: DEBUG
+
+  TargetLambdaFunctionEventSourceMapping:
+    Type: AWS::Lambda::EventSourceMapping
+    Properties:
+      Enabled: true
+      EventSourceArn: !Ref MSKVpcConnection
+      FunctionName: !Ref TargetLambdaFunction
+      Topics:
+        - MSKTutorialTopic
+      StartingPosition: LATEST
+      BatchSize: 10
+      ProvisionedPollerConfig: !If
+        - IsOnDemandMode
+        - !Ref AWS::NoValue
+        - MinimumPollers: 1
+          MaximumPollers: 2
+
+  # ------------------------------------------------------------#
+  # IAM
+  # ------------------------------------------------------------#
+  LambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyName: root
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              # Data plane: consuming records with IAM auth.
+              - Effect: Allow
+                Action:
+                  - kafka-cluster:Connect
+                  - kafka-cluster:DescribeGroup
+                  - kafka-cluster:AlterGroup
+                  - kafka-cluster:DescribeTopic
+                  - kafka-cluster:ReadData
+                  - kafka-cluster:DescribeClusterDynamicConfiguration
+                Resource: "*"
+              # Control plane: Lambda calls these to discover the bootstrap
+              # brokers and validate the cluster's auth settings.
+              - Effect: Allow
+                Action:
+                  - kafka:DescribeCluster
+                  - kafka:DescribeClusterV2
+                  - kafka:GetBootstrapBrokers
+                  # Cross-account only: reading the managed VPC connection.
+                  - kafka:DescribeVpcConnection
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - ec2:CreateNetworkInterface
+                  - ec2:DescribeNetworkInterfaces
+                  - ec2:DeleteNetworkInterface
+                  - ec2:DescribeVpcs
+                  - ec2:DescribeSubnets
+                  - ec2:DescribeSecurityGroups
+                Resource: "*"
+              - Effect: Allow
+                Action: logs:*
+                Resource: "*"
+      RoleName: !Sub ${ProjectPrefix}MSK-Lambda-IAM-Auth-Role
